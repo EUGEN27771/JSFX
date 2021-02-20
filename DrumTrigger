@@ -16,18 +16,23 @@ slider5:-30<-60,0,0.01>Threshold dB
 slider6:7<3,12,0.01>Sensitivity dB
 slider7:20<20,250,1>Retrig ms
 slider8:5<1,8,0.1>-Velocity Detection ms
-// -- MIDI Sliders -------- 
-slider9:0<0,11,1{36: C3,37: C#3,38: D3,39: Eb3,40: E3,41: F3,42: F#3,43: G3,44: G#3,45: A3,46: Bb3,47: B3}>MIDI Note
+// -- MIDI Sliders --------
+slider9:0<0,11,1{36: C1,37: C#1,38: D1,39: Eb1,40: E1,41: F1,42: F#1,43: G1,44: G#1,45: A1,46: Bb1,47: B1,48: C2,49: C#2,50: D2,51: D#2,52: E2,53: F2,54: F#2,55: G2,56: G#2,57: A2,58: A#2,59: B2,60: C3,61: C#3,62: D3,63: D#3,64: E3,65: F3,66: F#3,67: G3,68: G#3,69: A3,70: A#3,71: B3,72: C4,73: C#4,74: D4,75: D#4,76: E4,77: F4,78: F#4,79: G4,80: G#4}>MIDI Note
 slider10:2<0,3,1{1/4, 1/8, 1/16, 1/32, 1/64}>-Note Length
-// -- other ---------------
 
+@serialize
+//------------------------------------------------
+// xx and yy are curve point values, they should be saved/restored
+file_mem(0, xx, curve_npnts);
+file_mem(0, yy, curve_npnts);
 
 @init
 //------------------------------------------------
 ext_noinit = 1;
 envOut1 = 0;
 envOut2 = 0;
-retrig_cnt = 10^5; 
+retrig_cnt = 10^5;
+curve_npnts = 4;
 
 //-- GFX -----------------------------------------
 R = 20; G = 20; B = 20;
@@ -40,7 +45,7 @@ function wave.Init(x,y,w,h, mem_offs)   // args = x,y,w,h coord and buf memory o
   this.x = x; this.y = y;
   this.w = w; this.h = h;
   this.buf = mem_offs;     // peaks buf offs, must NOT cross other used mem slots!
-  this.Vzoom = 1;          // vertical zoom 
+  this.Vzoom = 1;          // vertical zoom
   this.div = 200;          // divfactor(smpls in peak)
   this.min_div = 40;//400; // divfactor min
   this.max_div = 4000;     // divfactor max
@@ -48,36 +53,36 @@ function wave.Init(x,y,w,h, mem_offs)   // args = x,y,w,h coord and buf memory o
 
 // == Build Waveform ==================================== //
 function wave.Build(input, trig_mrk)    // args = sample input and trig velo(if>0)
-  instance(buf, min_peak,max_peak,max_trig_mrk, div, w, spos, ppos)   
+  instance(buf, min_peak,max_peak,max_trig_mrk, div, w, spos, ppos)
   local(buf_sz)
 (
   min_peak = min(min_peak, input);   // min peak
   max_peak = max(max_peak, input);   // max peak
   max_trig_mrk = max(max_trig_mrk, trig_mrk); // max_trig_mrk in cur peak
-  
+
   // -- Save peaks - 0=min_peak, 1=max_peak, 2=max_trig_mrk; etc
   spos >= div ? (
     // clear buf, reset peak pos ----
     buf_sz = w*3;
-    ppos>=buf_sz ? ( 
-      memset(buf, 0, buf_sz); // clear peak buf 
+    ppos>=buf_sz ? (
+      memset(buf, 0, buf_sz); // clear peak buf
       ppos = 0;  // reset peak pos cnt
-    );  
-    
+    );
+
     // save values to buf -------
-    buf[ppos]   = min_peak; // min 
+    buf[ppos]   = min_peak; // min
     buf[ppos+1] = max_peak; // max
-    buf[ppos+2] = max_trig_mrk; // max_trig_mrk 
+    buf[ppos+2] = max_trig_mrk; // max_trig_mrk
     ppos+=3;
     // reset min-max values -----
-    min_peak = 10; max_peak = -10; // reset min-max peaks(v1-draw) 
+    min_peak = 10; max_peak = -10; // reset min-max peaks(v1-draw)
     //min_peak = max_peak = 0;     // reset min-max peaks(v2-draw)
     max_trig_mrk = 0;
     //---------------------------
     spos = 0;        // reset smpl pos cnt
     wave.redraw = 1; // need redraw wave
   );
-  
+
   //-----------------------------
   spos+=1; // upd smpl pos counter
 
@@ -86,21 +91,21 @@ function wave.Build(input, trig_mrk)    // args = sample input and trig velo(if>
 // == Draw Waveform ===================================== //
 function wave.Draw_waveform(Threshold)  // args = treshold (for tresh lines)
   instance(x,y,w,h, buf, Vzoom, div, min_div, max_div)
-  local(sx, hlf_h, axis, p, min_peak, max_peak, last_min_peak,last_max_peak, thresh_line) 
-( 
+  local(sx, hlf_h, axis, p, min_peak, max_peak, last_min_peak,last_max_peak, thresh_line)
+(
   //-- Draw bg, cnt --------
   gfx_set(0.04,0.04,0.04,1);
   gfx_rect(x-1,y,w+2,h+1,1);
   gfx_set(0.2,0.2,0.2,1);
-  gfx_rect(x-1,y,w+2,h+1,0); 
-  
+  gfx_rect(x-1,y,w+2,h+1,0);
+
   // -- draw wave ----------
   hlf_h = h/2;
   axis = y+hlf_h;
   sx = x; // start draw x-pos
   p = 0;  // peak cnt
   last_min_peak = last_max_peak = 0;
-  loop(w, 
+  loop(w,
     // -- wave peaks -------
     min_peak = hlf_h * buf[p] * Vzoom;
     max_peak = hlf_h * buf[p+1] * Vzoom;
@@ -112,17 +117,17 @@ function wave.Draw_waveform(Threshold)  // args = treshold (for tresh lines)
     // -- wave contour -----
     gfx_set(0.6,0.6,0.6,0.8);
     gfx_line(sx-1, axis-last_min_peak, sx, axis-min_peak, 1);
-    gfx_line(sx-1, axis-last_max_peak, sx, axis-max_peak, 1); 
+    gfx_line(sx-1, axis-last_max_peak, sx, axis-max_peak, 1);
     last_min_peak = min_peak;
     last_max_peak = max_peak;
-    
+
     // -- trigger markers --
     buf[p+2] ? (
       gfx_set(0.7,0.7,0.1,1);
       //velo_y  = max(y+h - h * buf[p+2] * Vzoom, y); // v1
       velo_y  = max(y+h - h * buf[p+2], y); // v2
       gfx_line(sx-1, y+h-1, sx-1, velo_y);
-      gfx_circle(sx, velo_y, 2, 1); 
+      gfx_circle(sx, velo_y, 2, 1);
       gfx_set(0.3,0.4,0.7,1);
     );
 
@@ -130,7 +135,7 @@ function wave.Draw_waveform(Threshold)  // args = treshold (for tresh lines)
     p+=3;   // upd peak cnt
     sx+=1;  // upd sx cnt
   );
-  
+
   // -- threshold_lines ----
   thresh_line = hlf_h * Threshold * Vzoom;
   thresh_line < hlf_h ? (
@@ -138,27 +143,27 @@ function wave.Draw_waveform(Threshold)  // args = treshold (for tresh lines)
     gfx_line(x, axis-thresh_line, x+w, axis-thresh_line);
     gfx_line(x, axis+thresh_line, x+w, axis+thresh_line);
   );
-  
+
   //-- Zoom ----------------------------
-  // можно исп. общ. функции, но пусть будет автономно. 
+  // можно исп. общ. функции, но пусть будет автономно.
   //-- Horisontal --
-  ( mouse_x > x && mouse_x < x+w && 
+  ( mouse_x > x && mouse_x < x+w &&
     mouse_y > y && mouse_y < y+h; ) ? (
       ( mouse_wheel<0 ? div = min(max_div, ceil(div/=0.8) );
         mouse_wheel>0 ? div = max(min_div, ceil(div*=0.8) );
-        mouse_wheel = 0; 
+        mouse_wheel = 0;
       );
   );
-  
+
   //-- Vertical ----
-  ( mouse_ox > x && mouse_ox < x+w && 
+  ( mouse_ox > x && mouse_ox < x+w &&
     mouse_oy > y && mouse_oy < y+h; ) ? (
       (mouse_cap&1) ? ( // -- Vertical v1
        mouse_last_y-mouse_y>0 ? Vzoom = min(10, Vzoom+=0.2 );
        mouse_last_y-mouse_y<0 ? Vzoom = max(1,  Vzoom-=0.2 );
        );
   );
-     
+
 );
 // == Init Waveform ====================================== //
 function wave.Init(x,y,w,h, mem_offs)   // args = x,y,w,h coord and buf memory offs(это важно)
@@ -166,7 +171,7 @@ function wave.Init(x,y,w,h, mem_offs)   // args = x,y,w,h coord and buf memory o
   this.x = x; this.y = y;
   this.w = w; this.h = h;
   this.buf = mem_offs;     // peaks buf offs, must NOT cross other used mem slots!
-  this.Vzoom = 1;          // vertical zoom 
+  this.Vzoom = 1;          // vertical zoom
   this.div = 200;          // divfactor(smpls in peak)
   this.min_div = 40;//400; // divfactor min
   this.max_div = 4000;     // divfactor max
@@ -174,36 +179,36 @@ function wave.Init(x,y,w,h, mem_offs)   // args = x,y,w,h coord and buf memory o
 
 // == Build Waveform ==================================== //
 function wave.Build(input, trig_mrk)    // args = sample input and trig velo(if>0)
-  instance(buf, min_peak,max_peak,max_trig_mrk, div, w, spos, ppos)   
+  instance(buf, min_peak,max_peak,max_trig_mrk, div, w, spos, ppos)
   local(buf_sz)
 (
   min_peak = min(min_peak, input);   // min peak
   max_peak = max(max_peak, input);   // max peak
   max_trig_mrk = max(max_trig_mrk, trig_mrk); // max_trig_mrk in cur peak
-  
+
   // -- Save peaks - 0=min_peak, 1=max_peak, 2=max_trig_mrk; etc
   spos >= div ? (
     // clear buf, reset peak pos ----
     buf_sz = w*3;
-    ppos>=buf_sz ? ( 
-      memset(buf, 0, buf_sz); // clear peak buf 
+    ppos>=buf_sz ? (
+      memset(buf, 0, buf_sz); // clear peak buf
       ppos = 0;  // reset peak pos cnt
-    );  
-    
+    );
+
     // save values to buf -------
-    buf[ppos]   = min_peak; // min 
+    buf[ppos]   = min_peak; // min
     buf[ppos+1] = max_peak; // max
-    buf[ppos+2] = max_trig_mrk; // max_trig_mrk 
+    buf[ppos+2] = max_trig_mrk; // max_trig_mrk
     ppos+=3;
     // reset min-max values -----
-    min_peak = 10; max_peak = -10; // reset min-max peaks(v1-draw) 
+    min_peak = 10; max_peak = -10; // reset min-max peaks(v1-draw)
     //min_peak = max_peak = 0;     // reset min-max peaks(v2-draw)
     max_trig_mrk = 0;
     //---------------------------
     spos = 0;        // reset smpl pos cnt
     wave.redraw = 1; // need redraw wave
   );
-  
+
   //-----------------------------
   spos+=1; // upd smpl pos counter
 
@@ -212,21 +217,21 @@ function wave.Build(input, trig_mrk)    // args = sample input and trig velo(if>
 // == Draw Waveform ===================================== //
 function wave.Draw_waveform(Threshold)  // args = treshold (for tresh lines)
   instance(x,y,w,h, buf, Vzoom, div, min_div, max_div)
-  local(sx, hlf_h, axis, p, min_peak, max_peak, last_min_peak,last_max_peak, thresh_line) 
-( 
+  local(sx, hlf_h, axis, p, min_peak, max_peak, last_min_peak,last_max_peak, thresh_line)
+(
   //-- Draw bg, cnt --------
   gfx_set(0.04,0.04,0.04,1);
   gfx_rect(x-1,y,w+2,h+1,1);
   gfx_set(0.2,0.2,0.2,1);
-  gfx_rect(x-1,y,w+2,h+1,0); 
-  
+  gfx_rect(x-1,y,w+2,h+1,0);
+
   // -- draw wave ----------
   hlf_h = h/2;
   axis = y+hlf_h;
   sx = x; // start draw x-pos
   p = 0;  // peak cnt
   last_min_peak = last_max_peak = 0;
-  loop(w, 
+  loop(w,
     // -- wave peaks -------
     min_peak = hlf_h * buf[p] * Vzoom;
     max_peak = hlf_h * buf[p+1] * Vzoom;
@@ -238,17 +243,17 @@ function wave.Draw_waveform(Threshold)  // args = treshold (for tresh lines)
     // -- wave contour -----
     gfx_set(0.6,0.6,0.6,0.8);
     gfx_line(sx-1, axis-last_min_peak, sx, axis-min_peak, 1);
-    gfx_line(sx-1, axis-last_max_peak, sx, axis-max_peak, 1); 
+    gfx_line(sx-1, axis-last_max_peak, sx, axis-max_peak, 1);
     last_min_peak = min_peak;
     last_max_peak = max_peak;
-    
+
     // -- trigger markers --
     buf[p+2] ? (
       gfx_set(0.7,0.7,0.1,1);
       //velo_y  = max(y+h - h * buf[p+2] * Vzoom, y); // v1
       velo_y  = max(y+h - h * buf[p+2], y); // v2
       gfx_line(sx-1, y+h-1, sx-1, velo_y);
-      gfx_circle(sx, velo_y, 2, 1); 
+      gfx_circle(sx, velo_y, 2, 1);
       gfx_set(0.3,0.4,0.7,1);
     );
 
@@ -256,7 +261,7 @@ function wave.Draw_waveform(Threshold)  // args = treshold (for tresh lines)
     p+=3;   // upd peak cnt
     sx+=1;  // upd sx cnt
   );
-  
+
   // -- threshold_lines ----
   thresh_line = hlf_h * Threshold * Vzoom;
   thresh_line < hlf_h ? (
@@ -264,27 +269,27 @@ function wave.Draw_waveform(Threshold)  // args = treshold (for tresh lines)
     gfx_line(x, axis-thresh_line, x+w, axis-thresh_line);
     gfx_line(x, axis+thresh_line, x+w, axis+thresh_line);
   );
-  
+
   //-- Zoom ----------------------------
-  // можно исп. общ. функции, но пусть будет автономно. 
+  // можно исп. общ. функции, но пусть будет автономно.
   //-- Horisontal --
-  ( mouse_x > x && mouse_x < x+w && 
+  ( mouse_x > x && mouse_x < x+w &&
     mouse_y > y && mouse_y < y+h; ) ? (
       ( mouse_wheel<0 ? div = min(max_div, ceil(div/=0.8) );
         mouse_wheel>0 ? div = max(min_div, ceil(div*=0.8) );
-        mouse_wheel = 0; 
+        mouse_wheel = 0;
       );
   );
-  
+
   //-- Vertical ----
-  ( mouse_ox > x && mouse_ox < x+w && 
+  ( mouse_ox > x && mouse_ox < x+w &&
     mouse_oy > y && mouse_oy < y+h; ) ? (
       (mouse_cap&1) ? ( // -- Vertical v1
        mouse_last_y-mouse_y>0 ? Vzoom = min(10, Vzoom+=0.2 );
        mouse_last_y-mouse_y<0 ? Vzoom = max(1,  Vzoom-=0.2 );
        );
   );
-     
+
 );
 //====================================================================================================
 /*----------------------------------------------------------
@@ -300,31 +305,31 @@ function Curve_Init(x,y,w,h, mem_offs, n_pnts)
   this.n_pnts = n_pnts;   // number of curve points
   //-- curve-points coords list ----------
   //-- xx[0]...xx[n_pnts-1] and yy[0]...yy[n_pnts-1]
-  this.xx = mem_offs;          // x-coord mem slots offs
-  this.yy = mem_offs + n_pnts; // y-coord mem slots offs
+  xx = mem_offs;          // x-coord mem slots offs
+  yy = mem_offs + n_pnts; // y-coord mem slots offs
   //-- def pnts values -------------------
   i=0;
   loop(n_pnts,
-    this.xx[i] = this.yy[i] = i/(n_pnts-1);
+    xx[i] = yy[i] = i/(n_pnts-1);
     i+=1;
-  ); 
+  );
 );
 
 //-- Apply curve to value -------------------------
 function Curve_App_to_Val(in_val)
-  instance(xx,yy, n_pnts, out_val)
+  instance(n_pnts, out_val)
   local(x1,y1,x2,y2, i)
-( 
+(
   //-- for 0...n_pnts-1 ------
   i=0;
   loop(n_pnts-1,
     x1 = xx[i]; y1 = yy[i]; x2 = xx[i+1]; y2 = yy[i+1]; // only for simplification
-    in_val>=x1 && in_val<x2 ? out_val = y1 + (in_val-x1) * (y2-y1)/(x2-x1);   
+    in_val>=x1 && in_val<x2 ? out_val = y1 + (in_val-x1) * (y2-y1)/(x2-x1);
     i+=1;
   );
   //-- for last point --------
-  in_val >= xx[n_pnts-1] ? out_val = yy[n_pnts-1];  
-  
+  in_val >= xx[n_pnts-1] ? out_val = yy[n_pnts-1];
+
   this.in_val = in_val; // store in_val for drawing
   this.out_val = out_val; // return
 );
@@ -332,23 +337,23 @@ function Curve_App_to_Val(in_val)
 //------------------------------------------------
 //-- Draw Curve(main function) -------------------
 function Curve_Draw()
-  instance(x,y,w,h, xx,yy, n_pnts, cap_pnt, in_val,out_val)
+  instance(x,y,w,h, n_pnts, cap_pnt, in_val,out_val)
   local(gx0,gy0, gx1,gy1, gx2,gy2, i)
-(   
+(
     //-- origin(use "|_" view ) --
     gx0 = x;     // min x;
     gy0 = y + h; // min y;
-    
+
     //-- Draw ----------------------------
     gfx_set(0.04,0.04,0.04,1);
     gfx_rect(x-1,y,w+2,h+1,1);
     gfx_set(0.2,0.2,0.2,1);
-    gfx_rect(x-1,y,w+2,h+1,0); 
-    
+    gfx_rect(x-1,y,w+2,h+1,0);
+
     //-- contour, guide line -----
     gfx_set(1,0,0,0.3);
     gfx_line(gx0, gy0, x+w, y, 1);
-    
+
     //-- Grid --------------------
     gfx_set(0,1,0, 0.07);
     gfx_line(x+w*0.25, y, x+w*0.25, y+h, 1);
@@ -357,13 +362,13 @@ function Curve_Draw()
     gfx_line(x, y+h*0.25, x+w, y+h*0.25, 1);
     gfx_line(x, y+h*0.5 , x+w, y+h*0.5 , 1);
     gfx_line(x, y+h*0.75, x+w, y+h*0.75, 1);
-  
+
     //-- draw curve, cap pnts ----
     i=0;
     loop(n_pnts,
-      gx1 = x + xx[i]*w; 
+      gx1 = x + xx[i]*w;
       gy1 = y + h - yy[i]*h;
-      gx2 = x + xx[i+1]*w; 
+      gx2 = x + xx[i+1]*w;
       gy2 = y + h - yy[i+1]*h;
       //-- draw points -----------
       gfx_set(0.6,0.6,0.6,0.8);
@@ -373,21 +378,21 @@ function Curve_Draw()
         gfx_line(gx1,gy1, gx2,gy2, 1);  // line
         gfx_set(1,1,1,0.03);            // area color
         gfx_triangle(gx1,gy1, gx2-1,gy2-1, gx2,gy0, gx1,gy0); // можно убрать -1(для линеек)
-      );  
+      );
         //-- capture pnt ---------
         mouse_cap&1 ? (
           (!last_mouse_cap&1 && // if mouse pressed in point
-            mouse_x > gx1-10 && mouse_x < gx1+10 && 
+            mouse_x > gx1-10 && mouse_x < gx1+10 &&
             mouse_y > gy1-10 && mouse_y < gy1+10; ) ? (
               cap_pnt = i;     // capture current point
            );
         ) : (
           cap_pnt = -1; // reset cap_pnt if mouse released
         );
-      
+
       i+=1;
     );
-    
+
     //-- change captd pnt coord --
     cap_pnt >= 0 ? (
       cap_pnt > 0 && cap_pnt < n_pnts-1 ?  // don't change first-last x-coord
@@ -405,19 +410,19 @@ function Curve_Draw()
           yy[i]<yy[cap_pnt] ? yy[i]=yy[cap_pnt];
         );
         i+=1;
-      ); 
-    ); 
-    
+      );
+    );
+
     //-- show last value ---------
     gfx_set(1,1,0,0.4);
     gfx_circle(gx0 + in_val*w , gy0 - out_val*h , 4,1);  // last velo point
     gfx_x = x+5; gfx_y = y+5;
-    
+
     /* Test variant
     gfx_drawnumber(in_msg3,0);        // last input velo
     gfx_drawstr(" to ");              // to >>>
     gfx_drawnumber(out_msg3,0);       // last output velo */
-    
+
     //Здесь нужно определиться с отображением значений!
     gfx_drawnumber(in_val,2);         // last input val
     gfx_drawstr(" to ");              // to >>>
@@ -430,19 +435,19 @@ function Curve_Draw()
 //-- mem_offs -(это важно) -- не должны пересекаться!
 //-- координаты тоже не должны пересекаться!
 //-- И координаты для прикола, нужны нормальные
-wave.Init(30,20,744,250, 1000);       // init wave  - (x,y,w,h, mem_offs) 
-crv.Curve_Init(795,20,270,250, 0, 4); // init curve - (x,y,w,h, mem_offs, n_pnts)
-       
+wave.Init(30,20,744,250, 1000);       // init wave  - (x,y,w,h, mem_offs)
+crv.Curve_Init(795,20,270,250, 0, curve_npnts); // init curve - (x,y,w,h, mem_offs, n_pnts)
 
-@slider 
+
+@slider
 // -- можно вынести в init -------------
 attack1  = 1/1000;   //1<0.1,5,0.01>-1attack(fast) ms
-attack2  = 7/1000;   //7<2,50,0.1>-2attack(slow) ms  
-release1 = 10/1000;  //10<0.1,50,0.1>-1release ms 
+attack2  = 7/1000;   //7<2,50,0.1>-2attack(slow) ms
+release1 = 10/1000;  //10<0.1,50,0.1>-1release ms
 release2 = 15/1000;  //15<2,50,1>-2release ms
 // -- ga, gr coeff -----------
 ga1 = exp(-1/(srate*attack1));
-gr1 = exp(-1/(srate*release1)); 
+gr1 = exp(-1/(srate*release1));
 ga2 = exp(-1/(srate*attack2));
 gr2 = exp(-1/(srate*release2));
 
@@ -453,7 +458,7 @@ Dry_Out = 10^(slider2/20);
 // -- Detector sliders - values --------
 Threshold = 10^(slider5/20);
 Sensitivity = 10^(slider6/20);
-Retrig = ceil((slider7/1000)*srate); 
+Retrig = ceil((slider7/1000)*srate);
 det_velo_smpls = (slider8/1000)*srate;
 
 // -- MIDI sliders - values ------------
@@ -489,24 +494,24 @@ spl1*=Dry_Out; //or use v2 spl1 = 0
 envOut1 < envIn ? ( // fast enelope
   envOut1 = envIn + ga1*(envOut1-envIn)
 ) : (
-  envOut1 = envIn + gr1*(envOut1-envIn) 
-);     
+  envOut1 = envIn + gr1*(envOut1-envIn)
+);
 
 envOut2 < envIn ? ( // slow enelope
   envOut2 = envIn + ga2*(envOut2-envIn)
 ) : (
-  envOut2 = envIn + gr2*(envOut2-envIn) 
+  envOut2 = envIn + gr2*(envOut2-envIn)
 );
 
-// -- Trigger ------------------------------------ 
+// -- Trigger ------------------------------------
 retrig_cnt > Retrig ? (
   envOut1 > Threshold && envOut1/envOut2 > Sensitivity ? (
     Trig = 1;
     retrig_cnt = 0;
     smpl_cnt = 0;
     peak_smpl = 0;
-  );                
-) : (           
+  );
+) : (
   envOut2 = envOut1; // уравнивает огибающие
   retrig_cnt+=1;
 );
@@ -518,16 +523,16 @@ Trig ? (
     smpl_cnt+=1;
   ) : (
   Trig = 0; // reset Trig
-  trig_pos = pos-det_velo_smpls; 
+  trig_pos = pos-det_velo_smpls;
   trig_pos < 0 ? trig_pos = 0;   // 0 = compromiss value
   note_off ? midisend(trig_pos, $x80, note_pitch, 0);   // prev note off(if need)
   // -- Scale velo, Send note -----------
   note_velo = ceil( min(crv.Curve_App_to_Val(peak_smpl)*127, 127) ); // Apply curve to value
   midisend(trig_pos, $x90, note_pitch, note_velo );     // new note on
-  trig_mrk = note_velo/127;  // for gfx 
+  trig_mrk = note_velo/127;  // for gfx
   note_off = 1;     // need note off
   );
-); 
+);
 
 // -- Send note off ------------------------------
 note_off ? (
@@ -536,12 +541,12 @@ note_off ? (
     midisend(trig_pos, $x80, note_pitch, 0); // current note off
     note_off = 0;
   );
-); 
+);
 
 pos+=1; // update pos
 
 // ========================================================================== //
-  
+
 
 
 // == For GFX =========================================== //
@@ -560,7 +565,7 @@ mouse_cap&1 && !last_mouse_cap&1 ? (
 wave.redraw ? (
   wave.Draw_waveform(Threshold); // draw
   wave.redraw = 0; // reset redraw state
-); 
+);
 
 crv.Curve_Draw();
 
@@ -571,6 +576,3 @@ mouse_last_x = mouse_x;
 mouse_last_y = mouse_y;
 
 char = gfx_getchar(); // -- без него не пашет перехват mod-keys!
-
-
-
